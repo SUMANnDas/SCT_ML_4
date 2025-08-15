@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Gesture Recognition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .camera-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #video {
+            width: 100%;
+            height: 300px;
+            border-radius: 10px;
+            background: #f0f0f0;
+            border: 2px dashed #ddd;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.4);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-input-display {
+            display: block;
+            padding: 40px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            text-align: center;
+            background: #f9f9f9;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-display:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-input-display.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+
+        #preview-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-section {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        #result {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2rem;
+            margin-top: 20px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-success {
+            background: linear-gradient(45deg, #84fab0, #8fd3f4);
+            color: #2d5016;
+        }
+
+        .result-error {
+            background: linear-gradient(45deg, #fc466b, #3f5efb);
+            color: white;
+        }
+
+        .result-waiting {
+            background: linear-gradient(45deg, #ffecd2, #fcb69f);
+            color: #8b4513;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .status {
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .gesture-history {
+            margin-top: 30px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤚 Hand Gesture Recognition</h1>
+            <p>AI-powered real-time hand gesture classification</p>
+            <div id="status" class="status status-offline">Connecting to server...</div>
+        </div>
+
+        <div class="main-content">
+            <!-- Camera Section -->
+            <div class="camera-section">
+                <h2 class="section-title">📷 Live Camera</h2>
+                <video id="video" autoplay muted></video>
+                <canvas id="canvas"></canvas>
+                <div class="controls">
+                    <button id="start-camera" class="btn btn-primary">Start Camera</button>
+                    <button id="capture" class="btn btn-secondary" disabled>Capture & Predict</button>
+                    <button id="stop-camera" class="btn btn-success" disabled>Stop Camera</button>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <h2 class="section-title">📁 Upload Image</h2>
+                <div class="file-input-wrapper">
+                    <input type="file" id="image-input" class="file-input" accept="image/*">
+                    <label for="image-input" class="file-input-display">
+                        <div>
+                            <p><strong>Click to upload</strong> or drag and drop</p>
+                            <p>PNG, JPG, JPEG files are supported</p>
+                        </div>
+                    </label>
+                </div>
+                <div id="preview-container" style="display: none;">
+                    <img id="preview-image" alt="Preview">
+                </div>
+                <div class="controls">
+                    <button id="predict-upload" class="btn btn-primary" disabled>Predict Gesture</button>
+                    <button id="clear-upload" class="btn btn-secondary">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="result-section">
+            <h2 class="section-title">🎯 Results</h2>
+            <div id="result" class="result-waiting">
+                Ready to analyze hand gestures!
+            </div>
+            
+            <!-- Gesture History -->
+            <div class="gesture-history">
+                <h3>Recent Predictions</h3>
+                <div id="history-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class HandGestureApp {
+            constructor() {
+                this.apiUrl = 'http://localhost:5000';
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.stream = null;
+                this.history = [];
+                
+                // Gesture emojis for better visualization
+                this.gestureEmojis = {
+                    'Palm': '🤚',
+                    'L Shape': '🤟',
+                    'Fist': '✊',
+                    'Fist (Moved)': '👊',
+                    'Thumbs Up': '👍',
+                    'Index Finger': '☝️',
+                    'OK Sign': '👌',
+                    'Palm (Moved)': '✋',
+                    'C Shape': '🤏',
+                    'Thumbs Down': '👎'
+                };
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.checkServerStatus();
+                this.loadAvailableGestures();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    startCamera: document.getElementById('start-camera'),
+                    capture: document.getElementById('capture'),
+                    stopCamera: document.getElementById('stop-camera'),
+                    imageInput: document.getElementById('image-input'),
+                    previewContainer: document.getElementById('preview-container'),
+                    previewImage: document.getElementById('preview-image'),
+                    predictUpload: document.getElementById('predict-upload'),
+                    clearUpload: document.getElementById('clear-upload'),
+                    result: document.getElementById('result'),
+                    status: document.getElementById('status'),
+                    historyList: document.getElementById('history-list')
+                };
+            }
+
+            setupEventListeners() {
+                // Camera controls
+                this.elements.startCamera.addEventListener('click', () => this.startCamera());
+                this.elements.capture.addEventListener('click', () => this.captureAndPredict());
+                this.elements.stopCamera.addEventListener('click', () => this.stopCamera());
+
+                // File upload
+                this.elements.imageInput.addEventListener('change', (e) => this.handleFileSelect(e));
+                this.elements.predictUpload.addEventListener('click', () => this.predictUploadedImage());
+                this.elements.clearUpload.addEventListener('click', () => this.clearUpload());
+
+                // Drag and drop
+                const fileInputDisplay = document.querySelector('.file-input-display');
+                fileInputDisplay.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    fileInputDisplay.classList.add('dragover');
+                });
+                fileInputDisplay.addEventListener('dragleave', () => {
+                    fileInputDisplay.classList.remove('dragover');
+                });
+                fileInputDisplay.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    fileInputDisplay.classList.remove('dragover');
+                    this.handleFileSelect(e);
+                });
+            }
+
+            async checkServerStatus() {
+                try {
+                    const response = await fetch(`${this.apiUrl}/health`);
+                    const data = await response.json();
+                    
+                    if (data.status === 'healthy') {
+                        this.elements.status.textContent = `✅ Server Online - ${data.classes_count} gestures available`;
+                        this.elements.status.className = 'status status-online';
+                    } else {
+                        this.elements.status.textContent = '⚠️ Server issues detected';
+                        this.elements.status.className = 'status status-offline';
+                    }
+                } catch (error) {
+                    this.elements.status.textContent = '❌ Server offline - Please start the backend server';
+                    this.elements.status.className = 'status status-offline';
+                }
+            }
+
+            async loadAvailableGestures() {
+                try {
+                    const response = await fetch(`${this.apiUrl}/classes`);
+                    const data = await response.json();
+                    
+                    if (data.readable_names_only) {
+                        console.log('Available gestures:', data.readable_names_only);
+                        // You could display available gestures in the UI here if needed
+                    }
+                } catch (error) {
+                    console.log('Could not load available gestures');
+                }
+            }
+
+            async startCamera() {
+                try {
+                    this.stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    this.video.srcObject = this.stream;
+                    
+                    this.elements.startCamera.disabled = true;
+                    this.elements.capture.disabled = false;
+                    this.elements.stopCamera.disabled = false;
+                    
+                    this.showResult('Camera started! Position your hand and click capture.', 'waiting');
+                } catch (error) {
+                    this.showResult('Error accessing camera: ' + error.message, 'error');
+                }
+            }
+
+            stopCamera() {
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                    this.video.srcObject = null;
+                }
+                
+                this.elements.startCamera.disabled = false;
+                this.elements.capture.disabled = true;
+                this.elements.stopCamera.disabled = true;
+                
+                this.showResult('Camera stopped.', 'waiting');
+            }
+
+            captureAndPredict() {
+                // Set canvas size to match video
+                this.canvas.width = this.video.videoWidth;
+                this.canvas.height = this.video.videoHeight;
+                
+                // Draw video frame to canvas
+                this.ctx.drawImage(this.video, 0, 0);
+                
+                // Convert to blob and predict
+                this.canvas.toBlob((blob) => {
+                    this.predictFromBlob(blob);
+                });
+            }
+
+            handleFileSelect(e) {
+                const files = e.dataTransfer ? e.dataTransfer.files : e.target.files;
+                const file = files[0];
+                
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.elements.previewImage.src = e.target.result;
+                        this.elements.previewContainer.style.display = 'block';
+                        this.elements.predictUpload.disabled = false;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            clearUpload() {
+                this.elements.imageInput.value = '';
+                this.elements.previewContainer.style.display = 'none';
+                this.elements.predictUpload.disabled = true;
+            }
+
+            predictUploadedImage() {
+                const src = this.elements.previewImage.src;
+                if (src) {
+                    this.predictFromDataURL(src);
+                }
+            }
+
+            async predictFromBlob(blob) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const dataURL = e.target.result;
+                    this.predictFromDataURL(dataURL);
+                };
+                reader.readAsDataURL(blob);
+            }
+
+            async predictFromDataURL(dataURL) {
+                this.showResult('<div class="loading"></div> Analyzing gesture...', 'waiting');
+                
+                try {
+                    const base64Data = dataURL.split(',')[1];
+                    
+                    const response = await fetch(`${this.apiUrl}/predict`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            image: base64Data
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const emoji = this.gestureEmojis[data.gesture] || '✋';
+                        this.showResult(
+                            `
+                            <div style="font-size: 2rem; margin-bottom: 10px;">${emoji}</div>
+                            <div><strong>Gesture:</strong> ${data.gesture}</div>
+                            <div><strong>Confidence:</strong> ${(data.confidence * 100).toFixed(1)}%</div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: ${data.confidence * 100}%"></div>
+                            </div>
+                            `,
+                            'success'
+                        );
+                        
+                        this.addToHistory(data.gesture, data.confidence);
+                    } else {
+                        this.showResult(`Error: ${data.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showResult(`Network error: ${error.message}`, 'error');
+                }
+            }
+
+            showResult(message, type) {
+                this.elements.result.innerHTML = message;
+                this.elements.result.className = `result-${type}`;
+            }
+
+            addToHistory(gesture, confidence) {
+                const timestamp = new Date().toLocaleTimeString();
+                this.history.unshift({ gesture, confidence, timestamp });
+                
+                // Keep only last 5 predictions
+                if (this.history.length > 5) {
+                    this.history = this.history.slice(0, 5);
+                }
+                
+                this.updateHistoryDisplay();
+            }
+
+            updateHistoryDisplay() {
+                this.elements.historyList.innerHTML = this.history
+                    .map(item => {
+                        const emoji = this.gestureEmojis[item.gesture] || '✋';
+                        return `
+                            <div class="history-item">
+                                <div>
+                                    <strong>${emoji} ${item.gesture}</strong>
+                                    <div style="font-size: 0.9em; color: #666;">${item.timestamp}</div>
+                                </div>
+                                <div style="font-weight: bold; color: #667eea;">
+                                    ${(item.confidence * 100).toFixed(1)}%
+                                </div>
+                            </div>
+                        `;
+                    })
+                    .join('');
+            }
+        }
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new HandGestureApp();
+        });
+    </script>
+</body>
+</html>
